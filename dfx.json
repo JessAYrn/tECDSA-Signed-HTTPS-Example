@@ -1,0 +1,40 @@
+{
+  "canisters": {
+    "dtc": {
+      "main": "src/dtc/main.mo",
+      "type": "motoko"
+    },
+    "journal": {
+      "main": "src/dtc/Journal.mo",
+      "type": "motoko"
+    },
+    "treasury": {
+      "main": "src/dtc/Treasury.mo",
+      "type": "motoko"
+    },
+    "manager": {
+      "main": "src/dtc/Manager.mo",
+      "type": "motoko"
+    },
+    "dtc_assets": {
+      "dependencies": [
+        "dtc"
+      ],
+      "frontend": {
+        "entrypoint": "src/dtc_assets/src/index.html"
+      },
+      "source": [
+        "src/dtc_assets/assets",
+        "dist/dtc_assets/"
+      ],
+      "type": "assets"
+    }
+  },
+  "defaults": {
+    "build": {
+      "args": "",
+      "packtool": ""
+    }
+  },
+  "version": 1
+}
