@@ -1,14 +1,11 @@
 import Governance "../../NNS/Governance";
 import IC "../../Types/IC/types";
 import EcdsaHelperMethods "../ECDSA/ECDSAHelperMethods";
-import Account "../../Serializers/Account";
 import Principal "mo:base/Principal";
 import Blob "mo:base/Blob";
 import Cycles "mo:base/ExperimentalCycles";
 import Nat64 "mo:base/Nat64";
-import Ledger "../../NNS/Ledger";
 import Time "mo:base/Time";
-import Int "mo:base/Int";
 import Result "mo:base/Result";
 import Buffer "mo:base/Buffer";
 import Text "mo:base/Text";
@@ -26,40 +23,8 @@ module {
     let LEAF : Nat64 = 3;
     public type Path = [Blob];
     public type Tree = [Value.Value];
-    let ledger : Ledger.Interface = actor (Ledger.CANISTER_ID);
-    let txFee : Nat64 = 10_000;
     public type TransformFnSignature = query { response : IC.http_response; context: Blob } -> async IC.http_response;
 
-    public func transferIcpToNeuron( amount: Nat64, memoOrNeuronSubaccountId: {#Memo: Nat64; #NeuronSubaccountId: Blob}, senderSubaccount: Account.Subaccount, controller: Principal): async {amountSent: Nat64} {
-        if(amount < 10_000){ return {amountSent: Nat64 = 0}; };
-        let (memo, treasuryNeuronSubaccountId) = switch(memoOrNeuronSubaccountId){
-            case(#Memo(memo)) { (memo, Account.neuronSubaccount(controller, memo)); };
-            case(#NeuronSubaccountId(subaccount)) { let memo: Nat64 = 0; (memo, subaccount) };
-        };
-        let treasuryNeuronAccountId = Account.accountIdentifier(Principal.fromText(Governance.CANISTER_ID), treasuryNeuronSubaccountId);
-        var amountSent = amount - txFee;
-        var transferInput = {memo;
-          from_subaccount = ?senderSubaccount;
-          to = treasuryNeuronAccountId;
-          amount = { e8s = amountSent };
-          fee = { e8s = txFee };
-          created_at_time = ?{ timestamp_nanos = Nat64.fromNat(Int.abs(Time.now())) };
-        };
-        let res = await ledger.transfer(transferInput);
-        switch(res){
-            case(#Ok(_)) { return {amountSent} };
-            case(#Err(#InsufficientFunds { balance })) { 
-                if(balance.e8s < 10_000){ return {amountSent: Nat64 = 0} };
-                amountSent := balance.e8s - txFee;
-                let res = await ledger.transfer({transferInput with amount = { e8s = amountSent }}); 
-                switch(res){
-                    case(#Ok(_)) { return {amountSent} };
-                    case(#Err(_)) { return {amountSent: Nat64 = 0} };
-                };
-            };
-            case(#Err(_)) { return {amountSent: Nat64 = 0}  };
-        };
-    };
 
     public func manageNeuron( input : TreasuryTypes.ManageNeuronInput): async TreasuryTypes.UnprocessedHttpResponseAndRequestId{
         let {args; selfAuthPrincipal; public_key; transformFn} = input;
